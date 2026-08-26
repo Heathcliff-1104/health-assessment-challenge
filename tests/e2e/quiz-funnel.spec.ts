@@ -35,8 +35,11 @@ test("resumes an interrupted funnel and unlocks protected results after payment"
   const previewBody = await previewResponse.json();
 
   expect(previewBody.data.access).toBe("preview");
-  expect(JSON.stringify(previewBody)).not.toContain("weeklyProjection");
-  expect(JSON.stringify(previewBody)).not.toContain("recommendedDailyCalories");
+  expect(previewBody.data).not.toHaveProperty("weeklyProjection");
+  expect(previewBody.data).not.toHaveProperty("recommendedDailyCalories");
+  expect(previewBody.data.lockedFields).toEqual(
+    expect.arrayContaining(["weeklyProjection", "recommendedDailyCalories"]),
+  );
   await expect(page.getByText("Your personalized plan is ready")).toBeVisible();
   await expect(page.getByText("Your daily calorie target")).toBeVisible();
 
