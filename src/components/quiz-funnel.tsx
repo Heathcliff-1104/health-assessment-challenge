@@ -428,7 +428,7 @@ export function QuizFunnel() {
         {currentStep === "gender" && <>
           <p className="eyebrow">Let’s begin</p><h1>How should we personalize your estimate?</h1><p className="question-help">This helps us estimate your baseline energy needs.</p>
           <div className="option-grid two-column">
-            {[["female","Female","♀"],["male","Male","♂"],["non_binary","Non-binary","◇"],["prefer_not_to_say","Prefer not to say","—"]].map(([value,label,icon]) => <button key={value} className={`option-card ${draft.gender === value ? "selected" : ""}`} onClick={() => setDraft((state) => ({ ...state, gender: value }))}><span className="option-icon">{icon}</span><strong>{label}</strong></button>)}
+            {[["female","Female","♀"],["male","Male","♂"],["non_binary","Non-binary","◇"],["prefer_not_to_say","Prefer not to say","—"]].map(([value,label,icon]) => <button key={value} aria-label={label} className={`option-card ${draft.gender === value ? "selected" : ""}`} onClick={() => setDraft((state) => ({ ...state, gender: value }))}><span className="option-icon" aria-hidden="true">{icon}</span><strong>{label}</strong></button>)}
           </div>
         </>}
 
