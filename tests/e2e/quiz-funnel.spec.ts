@@ -6,7 +6,7 @@ test("resumes an interrupted funnel and unlocks protected results after payment"
   await page.goto("/");
   await page.getByRole("button", { name: "Start my assessment" }).click();
 
-  await page.getByRole("button", { name: "Female" }).click();
+  await page.getByRole("button", { name: "Female", exact: true }).click();
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Question 2 of 5")).toBeVisible();
 
@@ -54,7 +54,7 @@ test("shows server validation without advancing an unreasonable weight target", 
 }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Start my assessment" }).click();
-  await page.getByRole("button", { name: "Male" }).click();
+  await page.getByRole("button", { name: "Male", exact: true }).click();
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("button", { name: /Lose weight/ }).click();
   await page.getByRole("button", { name: "Continue" }).click();

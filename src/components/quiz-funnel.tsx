@@ -276,8 +276,6 @@ export function QuizFunnel() {
         );
         setAssessment({ ...updated, status: "completed", version: updated.version + 1 });
         setResult(completed);
-      } else {
-        setStepIndex((current) => Math.min(current + 1, STEPS.length - 1));
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to save this answer");
