@@ -19,6 +19,8 @@ The implemented design uses typed columns for current state, JSONB only for audi
 
 I also rejected using the same result object and deleting paid fields at runtime. Separate preview/full DTO constructors are easier to audit and test: the protected values never enter the preview serialization path.
 
+CI exposed a second, subtler AI-generated test mistake. The first privacy assertion searched the entire preview JSON string for `weeklyProjection`. That produced a false failure because `lockedFields` intentionally names protected fields so the UI can render an upgrade prompt, even though the protected value is absent. I replaced the string search with structural `not.toHaveProperty` assertions and separately verified the lock metadata. The revised test now checks the actual security boundary rather than a coincidental substring.
+
 ## Human judgment retained
 
 AI suggestions were treated as hypotheses. I kept the final decisions on supported health ranges, non-binary estimation disclosure, transaction boundaries, public error details, test value, and what not to claim medically. I also avoided an automated `npm audit fix --force` because it proposed a breaking Prisma major-version downgrade for a development-only transitive advisory.

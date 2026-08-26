@@ -214,8 +214,14 @@ describeWithDatabase("assessment persistence and subscription flow", () => {
 
     const preview = await services.getAssessmentResult(session.id, assessment.id);
     expect(preview.access).toBe("preview");
-    expect(JSON.stringify(preview)).not.toContain("weeklyProjection");
-    expect(JSON.stringify(preview)).not.toContain("recommendedDailyCalories");
+    if (preview.access !== "preview") {
+      throw new Error("Expected a preview result before payment");
+    }
+    expect(preview).not.toHaveProperty("weeklyProjection");
+    expect(preview).not.toHaveProperty("recommendedDailyCalories");
+    expect(preview.lockedFields).toEqual(
+      expect.arrayContaining(["weeklyProjection", "recommendedDailyCalories"]),
+    );
 
     const payment = await services.activateMockSubscription(
       session.id,
