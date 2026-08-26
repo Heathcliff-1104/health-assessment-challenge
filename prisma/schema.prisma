@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+  PREFER_NOT_TO_SAY
+}
+
+enum AssessmentGoal {
+  LOSE_WEIGHT
+  MAINTAIN_WEIGHT
+  GAIN_WEIGHT
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+enum AssessmentStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum StepKey {
+  GENDER
+  GOAL
+  BODY_PROFILE
+  WEIGHT_GOAL
+  ACTIVITY
+}
+
+enum SubscriptionStatus {
+  INACTIVE
+  ACTIVE
+  EXPIRED
+}
+
+enum PaymentStatus {
+  SUCCEEDED
+  FAILED
+}
+
+model UserSession {
+  id               String         @id @default(uuid()) @db.Uuid
+  sessionTokenHash String         @unique @map("session_token_hash") @db.VarChar(64)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  lastSeenAt       DateTime       @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  expiresAt        DateTime       @map("expires_at") @db.Timestamptz(3)
+  revokedAt        DateTime?      @map("revoked_at") @db.Timestamptz(3)
+  assessments      Assessment[]
+  subscription     Subscription?
+  paymentEvents    PaymentEvent[]
+
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+model Assessment {
+  id             String                     @id @default(uuid()) @db.Uuid
+  userSessionId  String                     @map("user_session_id") @db.Uuid
+  status         AssessmentStatus           @default(IN_PROGRESS)
+  currentStep    StepKey?                   @map("current_step")
+  version        Int                        @default(0)
+  gender         Gender?
+  goal           AssessmentGoal?
+  age            Int?                       @db.SmallInt
+  heightCm       Decimal?                   @map("height_cm") @db.Decimal(5, 2)
+  weightKg       Decimal?                   @map("weight_kg") @db.Decimal(6, 2)
+  targetWeightKg Decimal?                   @map("target_weight_kg") @db.Decimal(6, 2)
+  activityLevel  ActivityLevel?             @map("activity_level")
+  completedAt    DateTime?                  @map("completed_at") @db.Timestamptz(3)
+  createdAt      DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  userSession    UserSession                @relation(fields: [userSessionId], references: [id], onDelete: Cascade)
+  submissions    AssessmentStepSubmission[]
+  result         AssessmentResult?
+
+  @@index([userSessionId, status, updatedAt])
+  @@map("assessments")
+}
+
+model AssessmentStepSubmission {
+  id                String     @id @default(uuid()) @db.Uuid
+  assessmentId      String     @map("assessment_id") @db.Uuid
+  stepKey           StepKey    @map("step_key")
+  idempotencyKey    String     @map("idempotency_key") @db.VarChar(128)
+  requestHash       String     @map("request_hash") @db.Char(64)
+  payload           Json
+  assessmentVersion Int        @map("assessment_version")
+  createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  assessment        Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, idempotencyKey])
+  @@index([assessmentId, stepKey, createdAt])
+  @@map("assessment_step_submissions")
+}
+
+model AssessmentResult {
+  id                       String     @id @default(uuid()) @db.Uuid
+  assessmentId             String     @unique @map("assessment_id") @db.Uuid
+  algorithmVersion         String     @map("algorithm_version") @db.VarChar(32)
+  bmi                      Decimal    @db.Decimal(4, 1)
+  bmiCategory              String     @map("bmi_category") @db.VarChar(32)
+  basalMetabolicRate       Int        @map("basal_metabolic_rate")
+  totalDailyEnergy         Int        @map("total_daily_energy")
+  recommendedDailyCalories Int        @map("recommended_daily_calories")
+  predictedTargetDate      DateTime   @map("predicted_target_date") @db.Date
+  weeklyProjection         Json       @map("weekly_projection")
+  calculatedAt             DateTime   @default(now()) @map("calculated_at") @db.Timestamptz(3)
+  assessment               Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@map("assessment_results")
+}
+
+model Subscription {
+  id            String             @id @default(uuid()) @db.Uuid
+  userSessionId String             @unique @map("user_session_id") @db.Uuid
+  status        SubscriptionStatus @default(INACTIVE)
+  planCode      String?            @map("plan_code") @db.VarChar(64)
+  startedAt     DateTime?          @map("started_at") @db.Timestamptz(3)
+  expiresAt     DateTime?          @map("expires_at") @db.Timestamptz(3)
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  userSession   UserSession        @relation(fields: [userSessionId], references: [id], onDelete: Cascade)
+
+  @@index([status, expiresAt])
+  @@map("subscriptions")
+}
+
+model PaymentEvent {
+  id              String        @id @default(uuid()) @db.Uuid
+  userSessionId   String        @map("user_session_id") @db.Uuid
+  externalEventId String        @unique @map("external_event_id") @db.VarChar(128)
+  status          PaymentStatus
+  requestHash     String        @map("request_hash") @db.Char(64)
+  payload         Json
+  processedAt     DateTime      @default(now()) @map("processed_at") @db.Timestamptz(3)
+  userSession     UserSession   @relation(fields: [userSessionId], references: [id], onDelete: Cascade)
+
+  @@index([userSessionId, processedAt])
+  @@map("payment_events")
+}
